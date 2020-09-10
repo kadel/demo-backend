@@ -1,26 +1,40 @@
-apiVersion: 1.0.0
+schemaVersion: 2.0.0
 metadata:
-  generateName: maven-
+  name: demo-backend
+  version: 1.0.0
 components:
-  - type: dockerimage
-    alias: tools
-    image: quay.io/eclipse/che-java11-maven:nightly
-    memoryLimit: 512Mi
-    mountSources: true
-    endpoints:
-      - name: '8080/tcp'
-        port: 8080
-    volumes:
-      - name: m2
-        containerPath: /home/user/.m2
+  - name: tools
+    container:
+      image: quay.io/eclipse/che-java11-maven:nightly
+      memoryLimit: 512Mi
+      mountSources: true
+      endpoints:
+        - name: 'http-8080'
+          targetPort: 8080
+      volumeMounts:
+        - name: m2
+          path: /home/user/.m2
+  - name: m2
+    volume: {}
 commands:
-  - name: devBuild
-    actions:
-      - type: exec
-        component: tools
-        command: "mvn package"
-  - name: devRun
-    actions:
-      - type: exec
-        component: tools
-        command: "java -jar target/*.jar"
+  - id: mvn-package
+    exec:
+      component: tools
+      commandLine: "mvn package"
+      group:
+        kind: build
+        isDefault: true
+  - id: run 
+    exec:
+      component: tools
+      commandLine: "java -jar target/*.jar"
+      group:
+        kind: run
+        isDefault: true
+  - id: debug
+    exec:
+      component: tools
+      commandLine: "java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=${DEBUG_PORT},suspend=n -jar target/*.jar"
+      group:
+        kind: debug
+        isDefault: true
